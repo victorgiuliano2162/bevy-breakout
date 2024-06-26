@@ -72,6 +72,9 @@ struct WallBundle {
     collider: Collider,
 }
 
+#[derive(Component)]
+struct Brick;
+
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     //camera
     commands.spawn(Camera2dBundle::default());
