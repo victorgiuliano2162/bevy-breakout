@@ -11,6 +11,7 @@ const PADDLE_COLOR: Color = Color::rgb(0.3, 0.3, 0.7);
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .insert_resource(ClearColor(Color::rgb( .9, .9, .9)))
         .add_systems(Update, bevy::window::close_on_esc)
         .add_systems(Startup, setup)
         .run();
