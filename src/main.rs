@@ -21,12 +21,18 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.9, 0.9, 0.9)))
         .add_systems(Update, bevy::window::close_on_esc)
         .add_systems(Startup, setup)
-        .add_systems(FixedUpdate, move_paddle)
+        .add_systems(FixedUpdate, (move_paddle, apply_velocity))
         .run();
 }
 
 #[derive(Component)]
 struct Paddle;
+
+#[derive(Component)]
+struct Ball;
+
+#[derive(Component, Deref, DerefMut)]
+struct Velocity(Vec2);
 
 fn setup(mut commands: Commands) {
     //camera
@@ -47,6 +53,24 @@ fn setup(mut commands: Commands) {
             ..default()
         },
         Paddle,
+    ));
+
+    //ball
+    commands.spawn((
+        SpriteBundle {
+            transform: Transform {
+                translation: BALL_STARTING_POSITION,
+                ..default()
+            },
+            sprite: Sprite {
+                color: BALL_COLOR,
+                custom_size: Some(BALL_SIZE),
+                ..default()
+            },
+            ..default()
+        },
+        Ball,
+        Velocity(BALL_SPEED * BALL_INITIAL_DIRECTION),
     ));
 }
 
@@ -86,4 +110,13 @@ fn move_paddle(
         + direction_y * PADDLE_SPEED * time_step.period.as_secs_f32();
 
     paddle_transform.translation.y = new_y;
+}
+
+fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time_setp: Res<FixedTime>) {
+    let dt = time_setp.period.as_secs_f32();
+
+    for (mut transform, velocity) in &mut query {
+        transform.translation.x += velocity.x + dt;
+        transform.translation.y += velocity.y + dt;
+    }
 }
