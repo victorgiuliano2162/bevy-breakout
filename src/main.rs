@@ -1,6 +1,5 @@
 #[allow(unused, dead_code)]
-use bevy::math::vec3;
-use bevy::{math::vec2, prelude::*, text::DEFAULT_FONT_HANDLE};
+use bevy::{math::*, prelude::*, sprite::collide_aabb::*};
 
 //paddle
 const PADDLE_START_Y: f32 = 0.0;
@@ -9,7 +8,7 @@ const PADDLE_COLOR: Color = Color::rgb(0.3, 0.3, 0.7);
 const PADDLE_SPEED: f32 = 500.0;
 
 //ball
-const BALL_COLOR: Color = Color::rgb(1.0, 0.5, 0.5);
+const BALL_COLOR: Color = Color::rgb(1.0, 7.5, 0.5);
 const BALL_STARTING_POSITION: Vec3 = Vec3::new(0.0, -50.0, 1.0);
 const BALL_SIZE: Vec2 = Vec2::new(30.0, 30.0);
 const BALL_SPEED: f32 = 400.0;
@@ -25,6 +24,14 @@ const WALL_THICKNESS: f32 = 10.;
 const WALL_BLOCK_WIDTH: f32 = RIGHT_WALL - LEFT_WALL;
 const WALL_BLOCK_HEIGHT: f32 = TOP_WALL - BOTTOM_WALL;
 const WALL_COLOR: Color = Color::rgb(0.8, 0.8, 0.8);
+
+//bricks
+const BRICK_SIZE: Vec2 = Vec2::new(100., 30.);
+const BRICK_COLOR: Color = Color::rgb(0.5, 0.5, 1.);
+const GAP_BETWEEN_PADDLE_AND_BRICKS: f32 = 270.;
+const GAP_BETWEEN_BRICKS: f32 = 5.;
+const GAP_BETWEEN_BRICKS_AND_CEILING: f32 = 20.;
+const GAP_BETWEEN_BRICKS_AND_SIDES: f32 = 20.;
 
 fn main() {
     App::new()
@@ -47,7 +54,9 @@ fn main() {
 struct Paddle;
 
 #[derive(Component)]
-struct Ball;
+struct Ball {
+    size: Vec2,
+}
 
 #[derive(Component, Deref, DerefMut)]
 struct Velocity(Vec2);
@@ -82,6 +91,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..default()
         },
         Paddle,
+        Collider { size: PADDLE_SIZE },
     ));
 
     //ball
@@ -100,8 +110,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             texture: ball_text,
             ..default()
         },
-        Ball,
-        Velocity(BALL_SPEED * BALL_INITIAL_DIRECTION), //Velocity(Vec2::ZERO)
+        Ball { size: BALL_SIZE },
+        Velocity(BALL_SPEED * BALL_INITIAL_DIRECTION),
     ));
 
     //walls
@@ -246,5 +256,41 @@ fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time_setp: Res<
     for (mut transform, velocity) in &mut query {
         transform.translation.x += velocity.x + dt;
         transform.translation.y += velocity.y + dt;
+    }
+}
+
+fn check_ball_collisions(
+    mut ball_query: Query<(&mut Velocity, &Transform, &Ball)>,
+    collider_query: Query<(&Transform, &Collider)>,
+) {
+    for (mut ball_velocity, ball_transform, ball) in &mut ball_query {
+        for (transform, other) in &collider_query {
+            let collision = collide(
+                ball_transform.translation,
+                ball.size,
+                transform.translation,
+                other.size,
+            );
+
+            let mut reflect_x = false;
+            let mut reflect_y = false;
+
+            if let Some(collision) = collision {
+                match collision {
+                    Collision::Left => reflect_x = ball_velocity.x > 0.0,
+                    Collision::Right => reflect_x = ball_velocity.x < 0.0,
+                    Collision::Top => reflect_y = ball_velocity.y < 0.0,
+                    Collision::Bottom => reflect_y = ball_velocity.y > 0.0,
+                    Collision::Inside => {} //do nothing
+                }
+
+                if reflect_x {
+                    ball_velocity.x *= -1.;
+                }
+                if reflect_y {
+                    ball_velocity.y *= -1.;
+                }
+            }
+        }
     }
 }
