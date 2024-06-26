@@ -15,6 +15,18 @@ const BALL_SIZE: Vec2 = Vec2::new(30.0, 30.0);
 const BALL_SPEED: f32 = 400.0;
 const BALL_INITIAL_DIRECTION: Vec2 = Vec2::new(0.5, -0.5);
 
+
+//wall
+const LEFT_WALL: f32 = -450.;
+const RIGHT_WALL: f32 = 450.;
+const BOTTOM_WALL: f32 = -300.;
+const TOP_WALL: f32 = 300.;
+
+const WALL_THICKNESS: f32 = 10.;
+const WALL_BLOCK_WIDTH: f32 = RIGHT_WALL - LEFT_WALL;
+const WALL_BLOCK_HEIGHT: f32 = TOP_WALL - BOTTOM_WALL;
+const WALL_COLOR: Color = Color::rgb(0.8, 0.8, 0.8);
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -34,7 +46,16 @@ struct Ball;
 #[derive(Component, Deref, DerefMut)]
 struct Velocity(Vec2);
 
-fn setup(mut commands: Commands) {
+#[derive(Component)]
+struct Collider;
+
+#[derive(Bundle)]
+struct WallBundle {
+    sprite_bundle: SpriteBundle,
+    collider: Collider,
+}
+
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     //camera
     commands.spawn(Camera2dBundle::default());
 
@@ -56,6 +77,7 @@ fn setup(mut commands: Commands) {
     ));
 
     //ball
+    let ball_text = asset_server.load("textures/circle.png");
     commands.spawn((
         SpriteBundle {
             transform: Transform {
@@ -67,10 +89,12 @@ fn setup(mut commands: Commands) {
                 custom_size: Some(BALL_SIZE),
                 ..default()
             },
+            texture: ball_text,
             ..default()
         },
         Ball,
-        Velocity(BALL_SPEED * BALL_INITIAL_DIRECTION),
+        Velocity(BALL_SPEED * BALL_INITIAL_DIRECTION)
+        //Velocity(Vec2::ZERO)
     ));
 }
 
@@ -80,6 +104,8 @@ fn move_paddle(
     mut query: Query<&mut Transform, With<Paddle>>,
 ) {
     let mut paddle_transform = query.single_mut();
+    //its juts useful when we have just one entity
+
     let mut direction_x = 0.0;
 
     if input.pressed(KeyCode::A) {
@@ -115,6 +141,7 @@ fn move_paddle(
 fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time_setp: Res<FixedTime>) {
     let dt = time_setp.period.as_secs_f32();
 
+    //its better way whe we have multiples entities
     for (mut transform, velocity) in &mut query {
         transform.translation.x += velocity.x + dt;
         transform.translation.y += velocity.y + dt;
