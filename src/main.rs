@@ -1,6 +1,6 @@
 #[allow(unused, dead_code)]
 use bevy::math::vec3;
-use bevy::prelude::*;
+use bevy::{math::vec2, prelude::*, text::DEFAULT_FONT_HANDLE};
 
 //paddle
 const PADDLE_START_Y: f32 = 0.0;
@@ -14,7 +14,6 @@ const BALL_STARTING_POSITION: Vec3 = Vec3::new(0.0, -50.0, 1.0);
 const BALL_SIZE: Vec2 = Vec2::new(30.0, 30.0);
 const BALL_SPEED: f32 = 400.0;
 const BALL_INITIAL_DIRECTION: Vec2 = Vec2::new(0.5, -0.5);
-
 
 //wall
 const LEFT_WALL: f32 = -450.;
@@ -47,7 +46,9 @@ struct Ball;
 struct Velocity(Vec2);
 
 #[derive(Component)]
-struct Collider;
+struct Collider {
+    size: Vec2,
+}
 
 #[derive(Bundle)]
 struct WallBundle {
@@ -93,10 +94,96 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..default()
         },
         Ball,
-        Velocity(BALL_SPEED * BALL_INITIAL_DIRECTION)
-        //Velocity(Vec2::ZERO)
+        Velocity(BALL_SPEED * BALL_INITIAL_DIRECTION), //Velocity(Vec2::ZERO)
     ));
+
+    //walls
+    {
+        let vertical_wall_size = vec2(WALL_THICKNESS, WALL_BLOCK_HEIGHT + WALL_THICKNESS);
+        let horizontal_wall_size = vec2(WALL_BLOCK_WIDTH + WALL_THICKNESS, WALL_THICKNESS);
+
+        //left wall
+        commands.spawn(WallBundle {
+            sprite_bundle: SpriteBundle {
+                transform: Transform {
+                    translation: vec3(LEFT_WALL, 0.0, 0.0),
+                    ..default()
+                },
+                sprite: Sprite {
+                    color: WALL_COLOR,
+                    custom_size: Some(vertical_wall_size),
+                    ..default()
+                },
+                ..default()
+            },
+            collider: Collider {
+                size: horizontal_wall_size,
+            },
+        });
+
+        //top wall
+        commands.spawn(WallBundle {
+            sprite_bundle: SpriteBundle {
+                transform: Transform {
+                    translation: vec3(0.0, TOP_WALL, 0.0),
+                    ..default()
+                },
+                sprite: Sprite {
+                    color: WALL_COLOR,
+                    custom_size: Some(horizontal_wall_size),
+                    ..default()
+                },
+                ..default()
+            },
+            collider: Collider {
+                size: horizontal_wall_size,
+            },
+        });
+        
+        //right wall 
+        {
+            commands.spawn(WallBundle {
+                sprite_bundle: SpriteBundle {
+                    transform: Transform {
+                        translation: vec3(RIGHT_WALL, 0.0, 0.0),
+                        ..default()
+                    },
+                    sprite: Sprite {
+                        color: WALL_COLOR,
+                        custom_size: Some(vertical_wall_size),
+                        ..default()
+                    },
+                    ..default()
+                },
+                collider: Collider {
+                    size: vertical_wall_size,
+                },
+            });
+        }
+
+        //bottom wall
+        {
+            commands.spawn( WallBundle {
+                sprite_bundle: SpriteBundle {
+                    transform: Transform {
+                    translation: vec3(0.0, BOTTOM_WALL, 0.0),
+                    ..default()
+                },
+                sprite: Sprite {
+                    color: WALL_COLOR,
+                    custom_size: Some(horizontal_wall_size),
+                    ..default()
+                },
+                ..default()
+                },
+                collider: Collider {
+                    size: vertical_wall_size
+                },
+            });
+        }
+    }
 }
+
 
 fn move_paddle(
     input: Res<Input<KeyCode>>,
