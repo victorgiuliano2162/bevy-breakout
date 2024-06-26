@@ -32,7 +32,14 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.9, 0.9, 0.9)))
         .add_systems(Update, bevy::window::close_on_esc)
         .add_systems(Startup, setup)
-        .add_systems(FixedUpdate, (move_paddle, apply_velocity))
+        .add_systems(
+            FixedUpdate,
+            (
+                move_paddle,
+                apply_velocity,
+                check_ball_collisions.after(apply_velocity),
+            ),
+        )
         .run();
 }
 
@@ -139,8 +146,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 size: horizontal_wall_size,
             },
         });
-        
-        //right wall 
+
+        //right wall
         {
             commands.spawn(WallBundle {
                 sprite_bundle: SpriteBundle {
@@ -163,27 +170,26 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
         //bottom wall
         {
-            commands.spawn( WallBundle {
+            commands.spawn(WallBundle {
                 sprite_bundle: SpriteBundle {
                     transform: Transform {
-                    translation: vec3(0.0, BOTTOM_WALL, 0.0),
+                        translation: vec3(0.0, BOTTOM_WALL, 0.0),
+                        ..default()
+                    },
+                    sprite: Sprite {
+                        color: WALL_COLOR,
+                        custom_size: Some(horizontal_wall_size),
+                        ..default()
+                    },
                     ..default()
-                },
-                sprite: Sprite {
-                    color: WALL_COLOR,
-                    custom_size: Some(horizontal_wall_size),
-                    ..default()
-                },
-                ..default()
                 },
                 collider: Collider {
-                    size: vertical_wall_size
+                    size: vertical_wall_size,
                 },
             });
         }
     }
 }
-
 
 fn move_paddle(
     input: Res<Input<KeyCode>>,
@@ -203,8 +209,12 @@ fn move_paddle(
         direction_x += 1.0;
     }
 
-    let new_x = paddle_transform.translation.x
+    let mut new_x = paddle_transform.translation.x
         + direction_x * PADDLE_SPEED * time_step.period.as_secs_f32();
+
+    new_x = new_x.min(RIGHT_WALL - (WALL_THICKNESS + PADDLE_SIZE.x) * 0.5);
+    new_x = new_x.max(LEFT_WALL + (WALL_THICKNESS + PADDLE_SIZE.x) * 0.5);
+    //Adding border limits to X axys
 
     paddle_transform.translation.x = new_x;
 
@@ -219,8 +229,12 @@ fn move_paddle(
         direction_y += 1.0;
     }
 
-    let new_y = paddle_transform.translation.y
+    let mut new_y = paddle_transform.translation.y
         + direction_y * PADDLE_SPEED * time_step.period.as_secs_f32();
+
+    new_y = new_y.min(TOP_WALL + (WALL_THICKNESS - PADDLE_SIZE.y) / 0.5);
+    new_y = new_y.max(BOTTOM_WALL - (WALL_THICKNESS - PADDLE_SIZE.y) / 0.5);
+    //border limits to y axys
 
     paddle_transform.translation.y = new_y;
 }
