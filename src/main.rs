@@ -288,6 +288,7 @@ fn move_paddle(
         direction_x += 1.0;
     }
 
+    //x axys
     let mut new_x = paddle_transform.translation.x
         + direction_x * PADDLE_SPEED * time_step.period.as_secs_f32();
 
@@ -297,7 +298,7 @@ fn move_paddle(
 
     paddle_transform.translation.x = new_x;
 
-    //y vertice
+    //y axys
     let mut direction_y = 0.0;
 
     if input.pressed(KeyCode::S) {
@@ -323,8 +324,8 @@ fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time_setp: Res<
 
     //its better way whe we have multiples entities
     for (mut transform, velocity) in &mut query {
-        transform.translation.x += velocity.x + dt;
-        transform.translation.y += velocity.y + dt;
+        transform.translation.x += velocity.x * dt;
+        transform.translation.y += velocity.y * dt;
     }
 }
 
