@@ -8,7 +8,7 @@ use bevy::{
         settings::{Backends, WgpuSettings},
         RenderPlugin,
     },
-    sprite::collide_aabb::*, transform::commands,
+    sprite::collide_aabb::*
 };
 use constants::constants::*;
 
@@ -22,7 +22,7 @@ fn main() {
         }))
         .insert_resource(ClearColor(Color::rgb(0.9, 0.9, 0.9)))
         .insert_resource(Scoreboard { score: 0})
-        .add_systems(Update, bevy::window::close_on_esc)
+        .add_systems(Update, (bevy::window::close_on_esc, update_scoreboard))
         .add_systems(Startup, setup)
         .add_systems(
             FixedUpdate,
@@ -58,16 +58,27 @@ struct WallBundle {
 }
 
 #[derive(Component)]
-struct Brick;
+struct Brick {
+    health: i8
+}
 
 #[derive(Resource, Clone, Copy)]
 struct Scoreboard {
     score: usize
 }
 
+#[derive(Resource, Default, Deref, DerefMut)]
+struct CollisionSound(Handle<AudioSource>);
+
+
+
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     //camera
     commands.spawn(Camera2dBundle::default());
+
+    //sound
+    let ball_collision_sound = asset_server.load("sounds/breckout_collision.ogg");
+    commands.insert_resource(CollisionSound(ball_collision_sound));
 
     //paddle
     commands.spawn((
@@ -93,15 +104,15 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         SpriteBundle {
             transform: Transform {
                 translation: BALL_STARTING_POSITION,
-                ..default()
+                ..Default::default()
             },
             sprite: Sprite {
                 color: BALL_COLOR,
                 custom_size: Some(BALL_SIZE),
-                ..default()
+                ..Default::default()
             },
-            texture: ball_text,
-            ..default()
+            texture: ball_text.clone(),
+            ..Default::default()
         },
         Ball { size: BALL_SIZE },
         Velocity(BALL_SPEED * BALL_INITIAL_DIRECTION),
@@ -197,7 +208,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             let offset_x = LEFT_WALL + GAP_BETWEEN_BRICKS_AND_SIDES + BRICK_SIZE.x * 0.5;
             let offset_y = BOTTOM_WALL + GAP_BETWEEN_PADDLE_AND_BRICKS + BRICK_SIZE.y * 0.5;
 
-            let bricks_total_width = (RIGHT_WALL - LEFT_WALL) - 2. * GAP_BETWEEN_BRICKS_AND_SIDES;
+            let bricks_total_width = (RIGHT_WALL - LEFT_WALL) - 2.0 * GAP_BETWEEN_BRICKS_AND_SIDES;
             let bricks_total_height = (TOP_WALL - BOTTOM_WALL)
                 - GAP_BETWEEN_BRICKS_AND_CEILING
                 - GAP_BETWEEN_PADDLE_AND_BRICKS;
@@ -219,15 +230,44 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 translation: brick_pos.extend(0.0),
                                 ..default()
                             },
+                            sprite: Sprite {
+                                color: BRICK_COLOR,
+                                custom_size: Some(BRICK_SIZE),
+                                ..default()
+                            },
                             ..default()
-                            Brick,
-                            Collider { size: BRICK_SIZE },
                         },
+                        Brick { health: 100 },
+                        Collider { size: BRICK_SIZE },
                     ));
                 }
             }
         }
+
     }
+    //scoreboard
+     commands.spawn((TextBundle::from_sections([
+        TextSection::new(
+            "Score: ",
+            TextStyle {
+                font_size: SCOREBOARD_FONT_SIZE,
+                color: TEXT_COLOR,
+                ..default()
+            },
+        ),
+        TextSection::from_style(TextStyle {
+            font_size: SCOREBOARD_FONT_SIZE,
+            color: SCORE_COLOR,
+            ..default()
+        }),
+     ])
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            top: SCOREBOARD_TEXT_PADDING,
+            left: SCOREBOARD_TEXT_PADDING,
+            ..default()
+        }),
+     ));
 }
 
 fn move_paddle(
@@ -291,6 +331,7 @@ fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time_setp: Res<
 fn check_ball_collisions(
     mut commands: Commands,
     mut score: ResMut<Scoreboard>,
+    collision_sound: Res<CollisionSound>,
     mut ball_query: Query<(&mut Velocity, &Transform, &Ball)>,
     collider_query: Query<(Entity, &Transform, &Collider, Option<&Brick>)>,
 ) {
@@ -326,8 +367,19 @@ fn check_ball_collisions(
                     score.score += 1;
                     println!("Score: {}", score.score);
                     commands.entity(other_entity).despawn()
-                }
+                };
+
+                //play collison sound
+                commands.spawn(AudioBundle {
+                    source: collision_sound.clone(),
+                    settings: PlaybackSettings::DESPAWN,
+                });
             }
         }
     }
+}
+
+fn update_scoreboard(score: Res<Scoreboard>, mut query: Query<&mut Text>) {
+    let mut text = query.single_mut();
+    text.sections[1].value = score.score.to_string();
 }
