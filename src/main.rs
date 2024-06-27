@@ -3,13 +3,18 @@
 
 mod constants;
 
-use bevy::{math::*, prelude::*, sprite::collide_aabb::*};
+use bevy::{math::*, prelude::*, render::{settings::{Backends, WgpuSettings}, RenderPlugin}, sprite::collide_aabb::*};
 use constants::constants::*;
 
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(RenderPlugin {
+            wgpu_settings: WgpuSettings {
+                backends: Some(Backends::VULKAN),
+                ..default()
+            },
+        }))
         .insert_resource(ClearColor(Color::rgb(0.9, 0.9, 0.9)))
         .add_systems(Update, bevy::window::close_on_esc)
         .add_systems(Startup, setup)
@@ -198,6 +203,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     commands.spawn((
                         SpriteBundle {}
                     ))
+
                 }
             }
 
