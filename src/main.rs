@@ -1,37 +1,11 @@
+
 #[allow(unused, dead_code)]
+
+mod constants;
+
 use bevy::{math::*, prelude::*, sprite::collide_aabb::*};
+use constants::constants::*;
 
-//paddle
-const PADDLE_START_Y: f32 = 0.0;
-const PADDLE_SIZE: Vec2 = Vec2::new(120.0, 20.0);
-const PADDLE_COLOR: Color = Color::rgb(0.3, 0.3, 0.7);
-const PADDLE_SPEED: f32 = 500.0;
-
-//ball
-const BALL_COLOR: Color = Color::rgb(1.0, 7.5, 0.5);
-const BALL_STARTING_POSITION: Vec3 = Vec3::new(0.0, -50.0, 1.0);
-const BALL_SIZE: Vec2 = Vec2::new(30.0, 30.0);
-const BALL_SPEED: f32 = 400.0;
-const BALL_INITIAL_DIRECTION: Vec2 = Vec2::new(0.5, -0.5);
-
-//wall
-const LEFT_WALL: f32 = -450.;
-const RIGHT_WALL: f32 = 450.;
-const BOTTOM_WALL: f32 = -300.;
-const TOP_WALL: f32 = 300.;
-
-const WALL_THICKNESS: f32 = 10.;
-const WALL_BLOCK_WIDTH: f32 = RIGHT_WALL - LEFT_WALL;
-const WALL_BLOCK_HEIGHT: f32 = TOP_WALL - BOTTOM_WALL;
-const WALL_COLOR: Color = Color::rgb(0.8, 0.8, 0.8);
-
-//bricks
-const BRICK_SIZE: Vec2 = Vec2::new(100., 30.);
-const BRICK_COLOR: Color = Color::rgb(0.5, 0.5, 1.);
-const GAP_BETWEEN_PADDLE_AND_BRICKS: f32 = 270.;
-const GAP_BETWEEN_BRICKS: f32 = 5.;
-const GAP_BETWEEN_BRICKS_AND_CEILING: f32 = 20.;
-const GAP_BETWEEN_BRICKS_AND_SIDES: f32 = 20.;
 
 fn main() {
     App::new()
@@ -201,6 +175,34 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 },
             });
         }
+
+        //bricks
+        {
+            let offset_x = LEFT_WALL + GAP_BETWEEN_BRICKS_AND_SIDES + BRICK_SIZE.x * 0.5;
+            let offset_y = BOTTOM_WALL + GAP_BETWEEN_PADDLE_AND_BRICKS + BRICK_SIZE.y * 0.5;
+
+            let bricks_total_width = (RIGHT_WALL - LEFT_WALL) - 2. * GAP_BETWEEN_BRICKS_AND_SIDES;
+            let bricks_total_height = (TOP_WALL - BOTTOM_WALL) - GAP_BETWEEN_BRICKS_AND_CEILING - GAP_BETWEEN_PADDLE_AND_BRICKS;
+
+            let rows = (bricks_total_height / (BRICK_SIZE.y + GAP_BETWEEN_BRICKS)).floor() as i32;
+            let columns = (bricks_total_width / (BRICK_SIZE.x + GAP_BETWEEN_BRICKS)). floor() as i32;
+            //convert values to i32 its just necessary to for loops ahead
+
+            for row in 0..rows {
+                for column in 0..columns {
+                    let brick_pos = vec2(
+                        offset_x + column as f32 * (BRICK_SIZE.x + GAP_BETWEEN_BRICKS), 
+                        offset_y + row as f32 * (BRICK_SIZE.y + GAP_BETWEEN_BRICKS),
+                    );
+
+                    commands.spawn((
+                        SpriteBundle {}
+                    ))
+                }
+            }
+
+        }
+
     }
 }
 
