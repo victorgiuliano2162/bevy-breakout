@@ -15,7 +15,7 @@ pub mod constants {
     pub const BALL_STARTING_POSITION: Vec3 = Vec3::new(0.0, -50.0, 1.0);
     pub const BALL_SIZE: Vec2 = Vec2::new(30.0, 30.0);
     pub const BALL_SPEED: f32 = 400.0; //need to be in 400
-    pub const BALL_INITIAL_DIRECTION: Vec2 = Vec2::new(0.5, -0.5);
+    pub const BALL_INITIAL_DIRECTION: Vec2 = Vec2::new(0.3, 0.2);
 
     //wall
     pub const LEFT_WALL: f32 = -450.0;
